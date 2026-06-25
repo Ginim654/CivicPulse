@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CivicPulse - Collaborative Community Issue Solver</title>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Sign In Screen -->
+  <div class="login-overlay" id="login-overlay">
+    <div class="glass-card login-card">
+      <div class="login-logo">
+        <i class="fa-solid fa-house-chimney-crack"></i>
+      </div>
+      <h2 class="login-title">Welcome to CivicPulse</h2>
+      <p class="login-subtitle">Connect, report, and transform your neighborhood</p>
+      
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label" for="login-username">Full Name</label>
+          <input type="text" id="login-username" class="form-input" placeholder="Enter your full name" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-email">Email Address</label>
+          <input type="email" id="login-email" class="form-input" placeholder="name@example.com" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 2rem;">
+          <label class="form-label" for="login-password">Password</label>
+          <input type="password" id="login-password" class="form-input" placeholder="••••••••" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-full">
+          Get Started <i class="fa-solid fa-arrow-right-to-bracket"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+  <div class="app-container blur-bg" id="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-icon">
+          <i class="fa-solid fa-house-chimney-crack"></i>
+        </div>
+        <div class="logo-text">
+          <h1>CivicPulse</h1>
+          <p>Empower Your Community</p>
+        </div>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <div class="nav-link active" data-view="dashboard">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>Dashboard</span>
+        </div>
+        <div class="nav-link" data-view="map">
+          <i class="fa-solid fa-map-location-dot"></i>
+          <span>Interactive Map</span>
+        </div>
+        <div class="nav-link" data-view="feed">
+          <i class="fa-solid fa-rectangle-list"></i>
+          <span>Issues Feed</span>
+        </div>
+        <div class="nav-link" data-view="report">
+          <i class="fa-solid fa-circle-plus"></i>
+          <span>Report Issue</span>
+        </div>
+        <div class="nav-link" data-view="leaderboard">
+          <i class="fa-solid fa-trophy"></i>
+          <span>Civic Engagement</span>
+        </div>
+        <div class="nav-link" data-view="admin">
+          <i class="fa-solid fa-user-shield"></i>
+          <span>Municipal Portal</span>
+        </div>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <div class="user-avatar" id="sidebar-avatar">JD</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebar-username">Jane Doe</div>
+          <div class="user-points">
+            <i class="fa-solid fa-star"></i>
+            <span id="sidebar-points">350</span> pts
+          </div>
+        </div>
+        <!-- Logout Button -->
+        <button id="logout-btn" class="btn btn-secondary btn-sm" style="padding: 0.4rem; border: none; background: transparent;" title="Log Out">
+          <i class="fa-solid fa-arrow-right-from-bracket" style="color: var(--danger);"></i>
+        </button>
+      </div>
+    </aside>
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <div class="page-title">
+          <h2 id="current-view-title">Dashboard Overview</h2>
+        </div>
+        <div class="top-bar-actions">
+          <button class="btn btn-secondary btn-sm" id="seed-data-btn">
+            <i class="fa-solid fa-database"></i> Reset Demo Data
+          </button>
+          <button class="btn btn-primary btn-sm" id="top-report-btn">
+            <i class="fa-solid fa-plus"></i> Report Issue
+          </button>
+        </div>
+      </header>
+      <!-- View Containers -->
+      <div class="view-container">
+        
+        <!-- 1. DASHBOARD VIEW -->
+        <div class="view-pane active" id="view-dashboard">
+          <div class="grid-stats">
+            <div class="glass-card stat-card">
+              <div class="stat-icon warning">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Reported Issues</span>
+                <span class="stat-value" id="stat-reported">0</span>
+              </div>
+            </div>
+            <div class="glass-card stat-card">
+              <div class="stat-icon primary">
+                <i class="fa-solid fa-square-check"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Community Verified</span>
+                <span class="stat-value" id="stat-verified">0</span>
+              </div>
+            </div>
+            <div class="glass-card stat-card">
+              <div class="stat-icon success">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Resolved Issues</span>
+                <span class="stat-value" id="stat-resolved">0</span>
+              </div>
+            </div>
+            <div class="glass-card stat-card">
+              <div class="stat-icon secondary">
+                <i class="fa-solid fa-award"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Your Civic Level</span>
+                <span class="stat-value" id="stat-level">Lvl 3</span>
+              </div>
+            </div>
+          </div>
+          <div class="grid-dashboard-main">
+            <!-- Analytics Chart Card -->
+            <div class="glass-card" style="display: flex; flex-direction: column;">
+              <h3 style="margin-bottom: 1.5rem; font-weight: 700;">Issue Type Breakdown & Predictive Trends</h3>
+              <div style="flex: 1; position: relative; min-height: 250px;">
+                <canvas id="dashboard-chart"></canvas>
+              </div>
+            </div>
+            <!-- Predictive Insights Sidebar -->
+            <div class="glass-card" style="display: flex; flex-direction: column; gap: 1rem;">
+              <h3 style="font-weight: 700;">Predictive Insights</h3>
+              
+              <div style="border-left: 3px solid var(--danger); padding-left: 0.75rem; font-size: 0.85rem;">
+                <h4 style="font-weight: 700; color: var(--danger); margin-bottom: 0.25rem;">Water Leakage Risk</h4>
+                <p style="color: var(--color-text-secondary);">Zone B reports are up by 40% this week. High correlation suggests deteriorating main pipes near Oak St.</p>
+              </div>
+              
+              <div style="border-left: 3px solid var(--warning); padding-left: 0.75rem; font-size: 0.85rem;">
+                <h4 style="font-weight: 700; color: var(--warning); margin-bottom: 0.25rem;">Pothole Hotspot Forecast</h4>
+                <p style="color: var(--color-text-secondary);">Upcoming temperature fluctuations in Zone A likely to expand 5 micro-cracks into major potholes by next week.</p>
+              </div>
+              
+              <div style="border-left: 3px solid var(--success); padding-left: 0.75rem; font-size: 0.85rem;">
+                <h4 style="font-weight: 700; color: var(--success); margin-bottom: 0.25rem;">Community Action Success</h4>
+                <p style="color: var(--color-text-secondary);">Quick street lamp verifications in Eastside reduced Municipal response latency by 2.4 days.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 2. INTERACTIVE MAP VIEW -->
+        <div class="view-pane map-view-layout" id="view-map">
+          <div class="map-container" id="main-map"></div>
+          
+          <!-- Map Overlay Dashboard -->
+          <div class="glass-card map-overlay-card">
+            <h3 style="margin-bottom: 0.75rem; font-weight: 700;">Map Filters</h3>
+            <div class="form-group">
+              <label class="form-label">Filter by Category</label>
+              <select class="form-input form-select" id="map-filter-category">
+                <option value="all">All Categories</option>
+                <option value="pothole">Potholes & Roads</option>
+                <option value="leakage">Water Leakages</option>
+                <option value="streetlight">Damaged Streetlights</option>
+                <option value="waste">Waste Management</option>
+                <option value="infrastructure">Infrastructure Challenges</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Filter by Status</label>
+              <select class="form-input form-select" id="map-filter-status">
+                <option value="all">All Statuses</option>
+                <option value="reported">Reported</option>
+                <option value="verified">Verified</option>
+                <option value="progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <!-- 3. ISSUES FEED VIEW -->
+        <div class="view-pane" id="view-feed">
+          <div class="feed-header">
+            <div class="feed-filters" id="feed-category-filters">
+              <button class="filter-btn active" data-filter="all">All</button>
+              <button class="filter-btn" data-filter="pothole">Potholes</button>
+              <button class="filter-btn" data-filter="leakage">Water Leakage</button>
+              <button class="filter-btn" data-filter="streetlight">Streetlights</button>
+              <button class="filter-btn" data-filter="waste">Waste</button>
+              <button class="filter-btn" data-filter="infrastructure">Infrastructure</button>
+            </div>
+            <div>
+              <select class="form-input form-select btn-sm" id="feed-sort-select" style="width: 150px; padding: 0.5rem 1rem;">
+                <option value="votes">Top Voted</option>
+                <option value="newest">Newest First</option>
+                <option value="status">Status</option>
+              </select>
+            </div>
+          </div>
+          <div class="issues-grid" id="issues-feed-grid">
+            <!-- Issue Cards Dynamically Generated Here -->
+          </div>
+        </div>
+        <!-- 4. REPORT ISSUE VIEW -->
+        <div class="view-pane" id="view-report">
+          <div class="report-layout">
+            <!-- Left Panel: Media and Map Selection -->
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+              <div class="glass-card" style="flex: 1; display: flex; flex-direction: column;">
+                <h3 style="margin-bottom: 1rem; font-weight: 700;">Step 1: Upload Media</h3>
+                
+                <input type="file" id="report-media-input" accept="image/*,video/*" style="display: none;">
+                
+                <div class="upload-zone" id="report-upload-zone">
+                  <div class="upload-icon">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                  </div>
+                  <h3>Drag & Drop Photo / Video</h3>
+                  <p style="color: var(--color-text-secondary); margin-top: 0.5rem; font-size: 0.85rem;">or click to select file from device</p>
+                </div>
+                
+                <div id="media-preview-container" style="display: none; margin-top: 1rem;">
+                  <div class="upload-preview-container">
+                    <img src="" alt="Upload Preview" class="upload-preview" id="media-preview-img">
+                    <button class="btn btn-secondary btn-sm" id="remove-media-btn" style="position: absolute; top: 0.5rem; right: 0.5rem; padding: 0.25rem 0.5rem;">
+                      <i class="fa-solid fa-xmark"></i> Remove
+                    </button>
+                  </div>
+                </div>
+                <!-- AI Category Scanner Simulation -->
+                <div class="ai-scanner-panel" id="ai-scanner" style="display: none;">
+                  <div class="ai-analysis-header">
+                    <i class="fa-solid fa-brain"></i>
+                    <span>AI CATEGORY RECOGNITION ACTIVE</span>
+                  </div>
+                  <div id="ai-scanner-loading" style="font-size: 0.85rem; color: var(--color-text-secondary);">
+                    Analyzing uploaded media structure...
+                  </div>
+                  <div id="ai-scanner-results" style="display: none;">
+                    <div class="ai-result-row">
+                      <span style="font-weight: 600;">Predicted Category:</span>
+                      <span id="ai-pred-category" style="color: var(--secondary); font-weight: bold;">Pothole</span>
+                    </div>
+                    <div class="ai-confidence-bar-bg">
+                      <div class="ai-confidence-bar-fill" id="ai-confidence-fill"></div>
+                    </div>
+                    <div class="ai-result-row" style="margin-top: 0.25rem;">
+                      <span style="font-size: 0.75rem; color: var(--color-text-muted);">Confidence level:</span>
+                      <span id="ai-confidence-text" style="font-size: 0.75rem; font-weight: bold; color: var(--color-text-secondary);">95%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Right Panel: Form Fields and Location -->
+            <div class="glass-card">
+              <h3 style="margin-bottom: 1.25rem; font-weight: 700;">Step 2: Issue Details</h3>
+              <form id="issue-report-form">
+                <div class="form-group">
+                  <label class="form-label" for="report-title">Title / Short Description</label>
+                  <input type="text" id="report-title" class="form-input" placeholder="e.g. Deep pothole causing lane switches on Oak St" required>
+                </div>
+                
+                <div class="form-group">
+                  <label class="form-label" for="report-category">Issue Category</label>
+                  <select id="report-category" class="form-input form-select" required>
+                    <option value="" disabled selected>Select category</option>
+                    <option value="pothole">Potholes & Roads</option>
+                    <option value="leakage">Water Leakages</option>
+                    <option value="streetlight">Damaged Streetlights</option>
+                    <option value="waste">Waste Management</option>
+                    <option value="infrastructure">Infrastructure Challenges</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="report-description">Detailed Description</label>
+                  <textarea id="report-description" class="form-input form-textarea" placeholder="Provide extra context such as safety hazards, duration of issue, etc." required></textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Pin Location on Map</label>
+                  <div class="form-map-selector" id="form-location-map"></div>
+                  <span style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 0.25rem; display: block;">
+                    Click on the map to mark the exact location.
+                  </span>
+                  <input type="hidden" id="report-lat">
+                  <input type="hidden" id="report-lng">
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                  <button type="button" class="btn btn-secondary btn-full" id="cancel-report-btn">Cancel</button>
+                  <button type="submit" class="btn btn-primary btn-full">Submit Report</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        <!-- 5. GAMIFICATION / LEADERBOARD VIEW -->
+        <div class="view-pane" id="view-leaderboard">
+          <div class="gamification-layout">
+            <!-- Left Side: User Profile Metrics -->
+            <div class="glass-card profile-card">
+              <div class="profile-avatar" id="user-profile-avatar">JD</div>
+              <div class="profile-level" id="user-profile-level">Lvl 3 Community Leader</div>
+              <h2 class="profile-name" id="user-profile-name">Jane Doe</h2>
+              <p class="profile-rank">Ranked #4 in Active Area</p>
+              <div class="profile-progress-container">
+                <div class="profile-progress-label">
+                  <span>Level Progress</span>
+                  <span id="level-progress-text">350 / 500 XP</span>
+                </div>
+                <div class="profile-progress-bg">
+                  <div class="profile-progress-fill" id="level-progress-bar" style="width: 70%;"></div>
+                </div>
+              </div>
+              <div style="width: 100%; text-align: left;">
+                <h4 style="font-weight: 700; margin-bottom: 0.75rem; font-size: 0.9rem;">Your Earned Badges</h4>
+                <div class="badges-grid">
+                  <div class="badge-item" title="Reported your first community issue">
+                    <span class="badge-icon">🚨</span>
+                    <span class="badge-name">First Alert</span>
+                  </div>
+                  <div class="badge-item" title="Upvoted or commented on 5 issues">
+                    <span class="badge-icon">🗳️</span>
+                    <span class="badge-name">Pothole Voter</span>
+                  </div>
+                  <div class="badge-item" title="Reported issues that municipal resolved">
+                    <span class="badge-icon">🛠️</span>
+                    <span class="badge-name">Fixer Helper</span>
+                  </div>
+                  <div class="badge-item locked" title="Get 10 positive community reviews (Locked)">
+                    <span class="badge-icon">🎖️</span>
+                    <span class="badge-name">Truth Teller</span>
+                  </div>
+                  <div class="badge-item locked" title="Validate 20 issues on the interactive map (Locked)">
+                    <span class="badge-icon">🗺️</span>
+                    <span class="badge-name">Geo Surveyor</span>
+                  </div>
+                  <div class="badge-item locked" title="Top contributor of the week (Locked)">
+                    <span class="badge-icon">👑</span>
+                    <span class="badge-name">Weekly King</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Right Side: Top Leaderboard -->
+            <div class="glass-card">
+              <h3 style="margin-bottom: 1.5rem; font-weight: 700;">Top Community Contributors</h3>
+              
+              <table class="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>User</th>
+                    <th>Issues Reported</th>
+                    <th>Validations</th>
+                    <th>Civic Points</th>
+                  </tr>
+                </thead>
+                <tbody id="leaderboard-tbody">
+                  <!-- Data filled via Javascript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <!-- 6. MUNICIPAL ADMIN PORTAL VIEW -->
+        <div class="view-pane" id="view-admin">
+          <div class="admin-grid">
+            <div class="glass-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 style="font-weight: 700;">Municipal Work Order Queue</h3>
+                <span style="font-size: 0.85rem; color: var(--color-text-secondary);">Simulating administrative dispatch capabilities</span>
+              </div>
+              
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Issue Title</th>
+                    <th>Category</th>
+                    <th>Reports</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-tbody">
+                  <!-- JS generated rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <!-- Toast Notification Wrapper -->
+  <div class="toast-notification" id="toast-notif">
+    <div class="toast-icon" id="toast-icon"><i class="fa-solid fa-circle-check"></i></div>
+    <div class="toast-message" id="toast-message">Action processed successfully!</div>
+  </div>
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- ChartJS (Universal CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Custom Core Script -->
+  <script src="app.js"></script>
+</body>
+</html>
